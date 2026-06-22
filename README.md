@@ -15,14 +15,6 @@ This project tries to deal with both issues in one pipeline - using SHAP and
 GRAD-CAM for explanations, and drift detection + incremental learning so the
 model can adapt instead of silently failing.
 
-## Current progress
-
-Right now I have the tabular pipeline working:
-- loads the UCI Adult Income dataset and cleans/encodes it
-- trains a Random Forest baseline model
-- generates SHAP explanations for individual predictions
-- basic test suite for all of the above
-
 Still working on:
 - image model (ResNet50) + GRAD-CAM
 - drift detection (ADWIN, Page-Hinkley)
