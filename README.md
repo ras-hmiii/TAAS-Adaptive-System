@@ -1,86 +1,138 @@
-# TAAS - Traceable and Adaptive AI Systems
+# TAAS - Traceable and Adaptive AI System
 
-This is my project for the AI/ML Microdegree program at AI Community in Nepal (AICN).
+TAAS is a research prototype for studying whether explainability, drift
+detection, and controlled model adaptation can maintain model reliability when
+real-world data distributions change.
 
-Supervisor: Diwas Sapkota
+## Research questions
 
-## What this is about
+1. Can SHAP explanations remain faithful and useful as input distributions shift?
+2. How do ADWIN and Page-Hinkley differ in detection behavior?
+3. When does a detected drift justify retraining or incremental adaptation?
+4. Does adaptation recover performance without unacceptable forgetting?
 
-Most AI models have two problems. First, you can't really tell why they made
-a decision (the "black box" thing). Second, once you deploy them, the real
-world data changes over time and the model just quietly gets worse without
-anyone noticing (this is called concept drift).
+## Current status
 
-This project tries to deal with both issues in one pipeline - using SHAP and
-GRAD-CAM for explanations, and drift detection + incremental learning so the
-model can adapt instead of silently failing.
+### Implemented
 
-Still working on:
-- image model (ResNet50) + GRAD-CAM
-- drift detection (ADWIN, Page-Hinkley)
-- incremental learning with EWC
-- dashboard (Streamlit)
-- REST API (FastAPI)
+- Adult Income ingestion, cleaning, deterministic 70/15/15 splitting, and
+  baseline Random Forest training.
+- SHAP instance and batch explanations with reconstruction fidelity checks.
+- Configurable mean, variance, and noise drift simulation.
+- Structured ADWIN and Page-Hinkley detector results.
+- Classification monitoring metrics and a conservative adaptation decision
+  workflow. Drift does not automatically promote a model.
+- In-memory model metadata registry, reusable experiment runner, and structured
+  audit events.
+- JSON persistence for experiment results and model metadata.
+- Deterministic streaming adaptation runner with candidate evaluation and audit
+  events.
+- Optional ResNet50/ImageNet prediction and Grad-CAM heatmap/overlay utilities.
+- FastAPI health/model/prediction endpoints.
+- Streamlit overview, prediction, explainability, drift, adaptation,
+  comparison, experiment, audit, and research-result pages backed by saved JSON
+  results.
 
-I'll keep updating this as I go, following the development plan from the
-proposal (roughly 16 weeks, phase by phase).
+### In progress
 
-## Folder structure
+- End-to-end incremental learning and EWC comparison experiments.
+- Production image dataset training and evaluation beyond ImageNet inference.
 
+### Planned
+
+- More complete dashboard views for drift distributions, model comparison, and
+  research results.
+- Larger controlled experiments and statistical analysis of detection delay,
+  false alarms, recovery, and forgetting.
+
+## Architecture and data flow
+
+```text
+Adult data -> preprocessing -> baseline model -> prediction -> SHAP
+           -> controlled drift -> ADWIN/Page-Hinkley -> monitoring
+           -> adaptation decision -> candidate evaluation -> audit/version
 ```
-taas/
-├── src/
-│   ├── ingestion/       data loading and preprocessing
-│   ├── models/          model training
-│   ├── explainability/  SHAP and GRAD-CAM
-│   ├── drift/           drift detection (coming soon)
-│   ├── adaptation/      incremental learning (coming soon)
-│   └── api/             FastAPI app (coming soon)
-├── dashboard/           Streamlit app (coming soon)
-├── notebooks/           exploratory analysis
-├── tests/               pytest tests
-├── data/                raw and processed data (not committed, see below)
-└── docs/
+
+The detector, adaptation, monitoring, and explainability modules do not depend
+on Streamlit. This keeps the research logic testable and reusable from the API
+or an experiment script.
+
+## Repository layout
+
+```text
+src/
+  ingestion/       Adult dataset loading and preprocessing
+  models/          baseline model training
+  explainability/  SHAP tabular explanations
+  drift/           detectors and controlled drift simulation
+  monitoring/      classification metrics
+  adaptation/      decisions and model metadata registry
+  experiments/     reproducible experiment primitives
+  audit/           chronological structured events
+  api/             FastAPI backend
+dashboard/         Streamlit research console
+tests/             behavioral tests
+data/              local raw and processed datasets
 ```
 
-## How to run it
+## Installation
 
 ```bash
-git clone https://github.com/<username>/traceable-adaptive-ai-systems.git
-cd traceable-adaptive-ai-systems
-
-python3 -m venv venv
-source venv/bin/activate      # on Windows: venv\Scripts\activate
-
-pip install -r requirements.txt
+python -m venv .venv
+# Windows PowerShell:
+.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
 ```
 
-Train the baseline model:
+## Running the system
+
+Train the baseline (downloads Adult Income if it is not cached):
+
 ```bash
 python -m src.models.train_tabular
 ```
 
-Run the tests:
+Start the API:
+
 ```bash
-pytest --cov=src
+python -m src.api
 ```
 
-## Datasets
+Available backend routes are `/health`, `/models`, `/predictions`,
+`/explanations`, `/experiments`, `/results`, `/drift`, and `/adaptation`.
 
-I didn't commit the actual data files (too big, plus licensing). You'll need
-to grab them yourself:
+Start the dashboard:
 
-- UCI Adult Income: https://archive.ics.uci.edu/dataset/2/adult
-- Chest X-Ray Pneumonia (Kaggle): https://www.kaggle.com/datasets/paultimothymooney/chest-xray-pneumonia
+```bash
+streamlit run dashboard/app.py
+```
 
-Put them in `data/raw/`. The Adult Income one will actually download
-automatically when you run the training script if it's not already there.
+Run tests:
 
-## Tech used
+```bash
+python -m pytest -q
+```
 
-Python, scikit-learn, SHAP, TensorFlow (for the image part later), River
-(for drift detection later), Streamlit, FastAPI, pytest
+## Metrics and research validity
 
-## License
+Metrics are calculated from supplied observations; the dashboard does not
+invent health or performance values. If no experiment JSON files exist under
+`results/`, it explicitly reports that results are unavailable. The current
+prototype calculates accuracy, precision, recall, F1, and ROC-AUC when a
+two-class sample is available. Detection delay, false alarms, recovery time,
+and forgetting require a completed streaming experiment and are therefore not
+claimed as implemented results.
 
-MIT, see LICENSE file
+## Data
+
+Data files are intentionally not committed. The Adult Income source is the UCI
+repository; the loader also supports an OpenML fallback. Place local files
+under `data/raw/` when offline.
+
+## Limitations and next experiment
+
+The current model is a tabular Random Forest and the registry is process-local.
+The recommended next experiment is a deterministic Adult Income stream with a
+configured mean shift at a known batch, comparing no adaptation, periodic
+retraining, and incremental adaptation with both detectors. Record pre-drift,
+post-drift, recovery, detection delay, and candidate-promotion decisions.

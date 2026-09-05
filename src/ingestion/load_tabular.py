@@ -82,7 +82,9 @@ def preprocess(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series, dict]:
     X = df.drop(columns=["income"])
 
     encoders = {}
-    categorical_cols = X.select_dtypes(include=["object", "str"]).columns
+    # Pandas 2.x rejects the Python ``str`` dtype selector; object covers the
+    # string columns returned by both the UCI and OpenML loaders.
+    categorical_cols = X.select_dtypes(include=["object"]).columns
 
     for col in categorical_cols:
         le = LabelEncoder()
