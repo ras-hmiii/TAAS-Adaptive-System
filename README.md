@@ -11,6 +11,9 @@ real-world data distributions change.
 3. When does a detected drift justify retraining or incremental adaptation?
 4. Does adaptation recover performance without unacceptable forgetting?
 
+For a detailed research-interest statement and proposed methodology, see
+[docs/research-interest.md](docs/research-interest.md).
+
 ## Current status
 
 ### Implemented
